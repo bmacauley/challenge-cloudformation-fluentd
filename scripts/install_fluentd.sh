@@ -19,13 +19,14 @@ gem install bundler
 # Clone Fluentd source and compile
 git clone https://github.com/fluent/fluentd.git
 cd fluentd
-bundle install
-bundle exec rake build
+/usr/local/bin/bundle install
+/usr/local/bin/bundle exec rake build
 
 # Install Fluentd
 gem install pkg/fluentd-1.2.0.gem
 gem install fluent-plugin-s3 -v 1.0.0
-
+./bin/fluentd --setup /etc/fluent
+cp /opt/fluent.conf /etc/fluent/fluent.conf
 
 # Start Fluentd
-fluentd -c /etc/fluent/fluent.conf -vv &
+./bin/fluentd -c /etc/fluent/fluent.conf -vv &

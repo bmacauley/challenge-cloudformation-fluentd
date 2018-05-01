@@ -4,4 +4,4 @@
 yum erase -y ntp*
 yum install -y chrony
 service chronyd start
-chkconfig chronyd o
+chkconfig chronyd on

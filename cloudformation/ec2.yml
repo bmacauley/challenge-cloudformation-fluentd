@@ -150,6 +150,24 @@ Resources:
 
     Metadata:
       AWS::CloudFormation::Init:
+        config:
+          files:
+            /opt/download_scripts.sh:
+              content: |
+                #!/bin/bash
+                aws s3 sync s3://fluentd-logging-1drf398/files/ .
+              mode: '000755'
+              owner: root
+              group: root
+          commands:
+            a_download_scripts_command:
+              command: /opt/download_scripts.sh
+            b_install_security_updates_command:
+              command: sh install_security_updates.sh
+            c_install_time_sync_command:
+              command: sh install_time_sync.sh
+            d_install_fluentd_command:
+              command: sh install_fluentd.sh
 
 
 Outputs:

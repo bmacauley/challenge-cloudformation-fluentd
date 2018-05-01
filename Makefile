@@ -126,6 +126,6 @@ delete:
 
 upload_files:
 	aws s3 cp ${PWD}/scripts/fluent.conf s3://fluentd-logging-1drf398/files/fluent.conf
-	aws s3 cp ${PWD}/scripts/fluent.conf s3://fluentd-logging-1drf398/files/install_fluentd.sh
-	aws s3 cp ${PWD}/scripts/fluent.conf s3://fluentd-logging-1drf398/files/install_security_updates.sh
-	aws s3 cp ${PWD}/scripts/fluent.conf s3://fluentd-logging-1drf398/files/install_time_sync.sh
+	aws s3 cp ${PWD}/scripts/install_fluentd.sh s3://fluentd-logging-1drf398/files/install_fluentd.sh
+	aws s3 cp ${PWD}/scripts/install_security_updates.sh s3://fluentd-logging-1drf398/files/install_security_updates.sh
+	aws s3 cp ${PWD}/scripts/install_time_sync.sh s3://fluentd-logging-1drf398/files/install_time_sync.sh
