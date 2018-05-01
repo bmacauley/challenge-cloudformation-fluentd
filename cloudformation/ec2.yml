@@ -161,7 +161,8 @@ Resources:
               group: root
           commands:
             a_download_scripts_command:
-              command: /opt/download_scripts.sh
+              command: ./download_scripts.sh
+              cwd: /opt
             b_install_security_updates_command:
               command: sh install_security_updates.sh
             c_install_time_sync_command:
