@@ -1,0 +1,158 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description:
+  "Template to set up Amazon Linux 2017.03 instance, with fluentd installed and logging syslog to an S3 bucket"
+
+# Metadata:
+
+
+Parameters:
+  KeyName:
+    Description: "Name of an existing EC2 KeyPair to enable SSH access to the instance"
+    Type: "String"
+
+  InstanceType:
+    Description: "EC2 instance type"
+    Type: "String"
+
+  VPCId:
+    Description: The VPC the EC2 instance is launched into.
+    Type: AWS::EC2::VPC::Id
+
+  SubnetId:
+    Description: The subnet the EC2 instance is launched into.
+    Type: AWS::EC2::Subnet::Id
+
+  S3BucketName:
+    Description: S3 bucket for the Fluentd logs.
+    Type: "String"
+
+# Amazon Linux 2017.03 AMI's
+Mappings:
+  RegionMap:
+    eu-west-1:
+      AMI: ami-ced221b7
+    eu-west-2:
+      AMI: ami-3981905d
+    eu-west-3:
+      AMI: ami-17c6736a
+    eu-central-1:
+      AMI: ami-3778d158
+    us-east-1:
+      AMI: ami-3cfdca47
+    us-east-2:
+      AMI: ami-4a86a62f
+    us-west-1:
+      AMI: ami-3a674d5a
+    us-west-2:
+      AMI: ami-215dbe59
+    ca-central-1:
+      AMI: ami-59c17f3d
+    sa-east-1:
+      AMI: ami-5774053b
+    ap-northeast-1:
+      AMI: ami-4af5022c
+    ap-northeast-2:
+      AMI: ami-1564bd7b
+    ap-south-1:
+      AMI: ami-97a9d3f8
+    ap-southeast-1:
+      AMI: ami-41bb2122
+    ap-southeast-2:
+      AMI: ami-30041c53
+
+
+# Conditions:
+
+
+# Transform:
+
+
+Resources:
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: "SecurityGroupAllSSH"
+      GroupDescription: "SecurityGroupAllSSH"
+      VpcId:
+        Ref: 'VPCId'
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+      Tags:
+        - Key: Name
+          Value: SecurityGroupAllSSH
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - Ref: 'Role'
+
+
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: EC2InstanceRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: iam
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub 'arn:aws:s3:::${S3BucketName}'
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                Resource:
+                  - !Sub 'arn:aws:s3:::${S3BucketName}/*'
+
+  Ec2Instance:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      # Select the correct AMI to load (based on the region the stack is created)
+      ImageId: !FindInMap
+        - RegionMap
+        - !Ref 'AWS::Region'
+        - AMI
+      InstanceType:
+        Ref: 'InstanceType'
+      IamInstanceProfile:
+        Ref: 'InstanceProfile'
+      SubnetId:
+        Ref: 'SubnetId'
+      KeyName:
+        Ref: 'KeyName'
+      SecurityGroupIds:
+        - Ref: 'InstanceSecurityGroup'
+      Tags:
+        - Key: Name
+          Value: ec2-instance
+
+    Metadata:
+      AWS::CloudFormation::Init:
+
+
+Outputs:
+  Ec2Instance:
+    Description: The private IP address of the instance.
+    Value: !GetAtt 'Ec2Instance.PrivateIp'

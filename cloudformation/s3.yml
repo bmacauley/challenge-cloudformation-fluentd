@@ -1,0 +1,103 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description:
+  "Template to set up an S3 bucket on AWS for installation artifacts and Fluentd logs"
+
+# Metadata:
+#   template metadata
+
+Parameters:
+  KeyName:
+    Description: "Name of an existing EC2 KeyPair to enable SSH access to the instance"
+    Type: "String"
+
+  InstanceType:
+    Description: "EC2 instance type"
+    Type: "String"
+
+  VPCId:
+    Description: The VPC the EC2 instance is launched into.
+    Type: AWS::EC2::VPC::Id
+
+  SubnetId:
+    Description: The subnet the EC2 instance is launched into.
+    Type: AWS::EC2::Subnet::Id
+
+  S3BucketName:
+    Description: S3 bucket for the Fluentd logs.
+    Type: "String"
+
+# Mappings:
+#   set of mappings
+
+# Conditions:
+#   set of conditions
+
+# Transform:
+#   set of transforms
+
+Resources:
+  KMSkey:
+    Type: "AWS::KMS::Key"
+    Properties:
+      Description: "KMS key to encrypt the fluentd log bucket"
+
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "kms-fluentd-1"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+                - !Sub "arn:aws:iam::${AWS::AccountId}:role/EC2InstanceRole"
+            Action:
+              - kms:*
+            Resource:
+              - '*'
+      Tags:
+        - Key: Name
+          Value: KMSKeyS3Fluentd
+
+  KMSkeyAlias:
+    Type: "AWS::KMS::Alias"
+    Properties:
+      AliasName:
+        !Sub "alias/${AWS::StackName}-Key"
+      TargetKeyId:
+        !GetAtt KMSkey.Arn
+
+
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Ref 'S3BucketName'
+      AccessControl: 'Private'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              KMSMasterKeyID: !GetAtt KMSkey.Arn
+              SSEAlgorithm: 'aws:kms'
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref 'S3Bucket'
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id: "s3-bucket-policy"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                !Sub "arn:aws:iam::${AWS::AccountId}:role/EC2InstanceRole"
+            Action:
+              - s3:*
+            Resource: !GetAtt S3Bucket.Arn
+
+
+
+
+# Outputs:
+

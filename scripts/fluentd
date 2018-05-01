@@ -1,0 +1,90 @@
+#!/bin/bash
+#
+# /etc/rc.d/init.d/fluentd
+#
+# chkconfig: - 80 20
+# description: fluentd
+# processname: fluentd
+
+# Source function library.
+. /etc/init.d/functions
+
+name="fluentd"
+prog="fluentd"
+
+if [ -f /etc/sysconfig/$prog ]; then
+. /etc/sysconfig/$prog
+fi
+
+FLUENTD_HOME=/var/service/fluentd/local
+RUBY=${FLUENTD_RUBY-/var/service/fluentd/local/bin/ruby}
+FLUENTD=${FLUENTD-/usr/local/ruby193/bin/fluentd}
+PIDFILE=${PIDFILE-$FLUENTD_HOME/run/$prog.pid}
+LOGFILE=${LOGFILE-$FLUENTD_HOME/log/$prog.out}
+USER=${FLUENTD_USER-root}
+FLUENTD_CONFIG=${FLUENTD_CONFIG-$FLUENTD_HOME/conf/$prog.conf}
+FLUENTD_PLUGIN=${FLUENTD_PLUGIN-$FLUENTD_HOME/plugin}
+DAEMON_ARGS=${DAEMON_ARGS---user $USER}
+FLUENTD_ARGS="${FLUENTD_ARGS-$FLUENTD --group $USER --log $LOGFILE --config $FLUENTD_CONFIG --plugin $FLUENTD_PLUGIN}"
+
+if [ -n "${PIDFILE}" ]; then
+mkdir -p $(dirname ${PIDFILE})
+        if [ -n "${LOGFILE}" ]; then
+mkdir -p $(dirname ${LOGFILE})
+        fi
+chown -R $USER:$USER $(dirname ${PIDFILE})
+FLUENTD_ARGS="${FLUENTD_ARGS} --daemon ${PIDFILE}"
+fi
+
+RETVAL=0
+
+start() {
+echo -n "Starting $prog: "
+daemon --pidfile=$PIDFILE $DAEMON_ARGS $RUBY "$FLUENTD_ARGS"
+RETVAL=$?
+echo
+[ $RETVAL -eq 0 ] && touch /var/lock/subsys/$prog
+return $RETVAL
+}
+
+stop() {
+echo -n "Shutting down $prog: "
+if [ -e "${PIDFILE}" ]; then
+killproc -p ${PIDFILE} || killproc $prog
+else
+killproc $prog
+fi
+RETVAL=$?
+echo
+[ $RETVAL -eq 0 ] && rm -f $PIDFILE && rm -f /var/lock/subsys/$prog
+return $RETVAL
+}
+
+restart() {
+stop
+start
+}
+
+case "$1" in
+    start)
+start
+;;
+    stop)
+stop
+;;
+    restart)
+     restart
+;;
+    condrestart)
+[ -f /var/lock/subsys/$prog ] && restart || :
+;;
+
+    status)
+status -p $PIDFILE $prog
+;;
+    *)
+echo "Usage: $prog {start|stop|restart|condrestart|status}"
+exit 1
+;;
+esac
+exit $?
