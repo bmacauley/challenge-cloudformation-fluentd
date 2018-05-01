@@ -3,7 +3,7 @@
 Create a Cloudformation Stackset to setup an EC2 instance and install td-agent
 
 ## Assumptions
-- The user sufficient AWS privs to run the Cloudformation template in AWS
+- The user has sufficient AWS privs to run the Cloudformation template in AWS
 - The user will set up and EC2 key pair and configure this in KeyName in .env.json
 
 
